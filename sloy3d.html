@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЛОЙ 3D — 3D Печать в Минске</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080C10;
+  --surface: #0D1318;
+  --card: #111820;
+  --border: rgba(0,200,255,0.12);
+  --cyan: #00C8FF;
+  --cyan-dim: rgba(0,200,255,0.08);
+  --cyan-glow: rgba(0,200,255,0.25);
+  --white: #F0F4F8;
+  --muted: rgba(240,244,248,0.45);
+  --accent2: #FF6B35;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Manrope', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* CUSTOM CURSOR */
+.cursor {
+  position: fixed; width: 8px; height: 8px;
+  background: var(--cyan); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform 0.1s, width 0.3s, height 0.3s, opacity 0.3s;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  position: fixed; width: 32px; height: 32px;
+  border: 1px solid rgba(0,200,255,0.5);
+  border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform 0.15s ease, width 0.3s, height 0.3s;
+}
+
+/* GRID OVERLAY */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none; z-index: 0;
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; width: 100%; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 60px;
+  background: rgba(8,12,16,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem; letter-spacing: 4px;
+  color: var(--white);
+}
+.logo span { color: var(--cyan); }
+.nav-links { display: flex; gap: 40px; list-style: none; }
+.nav-links a {
+  text-decoration: none; color: var(--muted);
+  font-size: 0.82rem; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--cyan); }
+.nav-cta {
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 10px 28px; border-radius: 2px;
+  font-size: 0.8rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.3s;
+  position: relative; overflow: hidden;
+}
+.nav-cta::before {
+  content: ''; position: absolute;
+  inset: 0; background: var(--cyan);
+  transform: translateX(-101%); transition: transform 0.3s;
+}
+.nav-cta:hover::before { transform: translateX(0); }
+.nav-cta:hover { color: var(--bg); }
+.nav-cta span { position: relative; z-index: 1; }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 140px 60px 80px;
+  position: relative; overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0,200,255,0.12) 0%, transparent 70%);
+  top: -100px; right: -100px;
+  pointer-events: none;
+  animation: pulse 4s ease-in-out infinite;
+}
+.hero-glow2 {
+  position: absolute;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,107,53,0.08) 0%, transparent 70%);
+  bottom: 0; left: 20%;
+  pointer-events: none;
+  animation: pulse 6s ease-in-out infinite reverse;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  border: 1px solid var(--border);
+  background: var(--cyan-dim);
+  padding: 8px 20px; border-radius: 2px;
+  font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--cyan); margin-bottom: 32px;
+  width: fit-content;
+  animation: fadeSlide 0.8s ease both;
+}
+.hero-tag::before {
+  content: ''; width: 8px; height: 8px;
+  background: var(--cyan); border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(5rem, 12vw, 11rem);
+  line-height: 0.9;
+  letter-spacing: 2px;
+  animation: fadeSlide 0.8s ease 0.1s both;
+}
+.hero h1 .line2 { color: var(--cyan); display: block; }
+.hero h1 .line3 {
+  -webkit-text-stroke: 1px rgba(240,244,248,0.3);
+  color: transparent; display: block;
+}
+
+.hero-desc {
+  margin-top: 40px; max-width: 520px;
+  font-size: 1rem; line-height: 1.8;
+  color: var(--muted); font-weight: 400;
+  animation: fadeSlide 0.8s ease 0.2s both;
+}
+
+.hero-actions {
+  margin-top: 48px; display: flex; gap: 20px; flex-wrap: wrap;
+  animation: fadeSlide 0.8s ease 0.3s both;
+}
+.btn-main {
+  background: var(--cyan); color: var(--bg);
+  padding: 18px 40px; border-radius: 2px;
+  font-size: 0.85rem; font-weight: 800;
+  letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: all 0.3s;
+  box-shadow: 0 0 40px rgba(0,200,255,0.3);
+}
+.btn-main:hover { box-shadow: 0 0 60px rgba(0,200,255,0.5); transform: translateY(-2px); }
+.btn-ghost {
+  background: transparent; color: var(--white);
+  padding: 18px 40px; border-radius: 2px;
+  font-size: 0.85rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid rgba(240,244,248,0.15);
+  transition: all 0.3s;
+}
+.btn-ghost:hover { border-color: var(--white); }
+
+.hero-metrics {
+  margin-top: 80px;
+  display: flex; gap: 0; flex-wrap: wrap;
+  border: 1px solid var(--border);
+  width: fit-content;
+  animation: fadeSlide 0.8s ease 0.4s both;
+}
+.metric {
+  padding: 24px 40px;
+  border-right: 1px solid var(--border);
+}
+.metric:last-child { border-right: none; }
+.metric-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.4rem; letter-spacing: 2px;
+  color: var(--cyan);
+}
+.metric-label {
+  font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); margin-top: 4px;
+}
+
+/* SCROLL INDICATOR */
+.scroll-hint {
+  position: absolute; bottom: 40px; left: 60px;
+  display: flex; align-items: center; gap: 14px;
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted);
+  animation: fadeSlide 1s ease 0.6s both;
+}
+.scroll-line {
+  width: 60px; height: 1px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* SECTION BASE */
+section { padding: 100px 60px; position: relative; }
+.s-label {
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--cyan); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.s-label::before {
+  content: ''; width: 30px; height: 1px;
+  background: var(--cyan);
+}
+.s-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  letter-spacing: 2px; line-height: 1;
+  margin-bottom: 16px;
+}
+
+/* WHAT WE PRINT */
+.services { background: var(--surface); }
+.services-intro {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 60px; align-items: start; margin-bottom: 70px;
+}
+.services-desc {
+  font-size: 0.95rem; line-height: 1.85;
+  color: var(--muted); padding-top: 12px;
+  max-width: 460px;
+}
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+}
+.srv-card {
+  background: var(--card);
+  padding: 36px 32px;
+  transition: background 0.3s;
+  position: relative; overflow: hidden;
+}
+.srv-card::after {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 2px;
+  background: var(--cyan); transform: scaleX(0);
+  transition: transform 0.3s; transform-origin: left;
+}
+.srv-card:hover { background: rgba(0,200,255,0.05); }
+.srv-card:hover::after { transform: scaleX(1); }
+.srv-icon { font-size: 2rem; margin-bottom: 20px; display: block; }
+.srv-card h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; letter-spacing: 2px;
+  color: var(--white); margin-bottom: 10px;
+}
+.srv-card p { font-size: 0.83rem; line-height: 1.7; color: var(--muted); }
+
+/* HOW IT WORKS */
+.how { background: var(--bg); }
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; margin-top: 60px;
+  position: relative;
+}
+.steps::before {
+  content: ''; position: absolute;
+  top: 32px; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+.step { padding: 0 32px; text-align: center; }
+.step-num {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 28px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem; letter-spacing: 2px;
+  color: var(--cyan);
+  position: relative; z-index: 1;
+  transition: all 0.3s;
+}
+.step:hover .step-num {
+  background: var(--cyan); color: var(--bg);
+  box-shadow: 0 0 30px var(--cyan-glow);
+}
+.step h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem; letter-spacing: 2px;
+  color: var(--white); margin-bottom: 12px;
+}
+.step p { font-size: 0.83rem; line-height: 1.7; color: var(--muted); }
+
+/* WHY US */
+.why { background: var(--surface); }
+.why-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 2px; background: var(--border);
+  border: 1px solid var(--border);
+  margin-top: 60px;
+}
+.why-card {
+  background: var(--card);
+  padding: 48px 44px;
+  transition: background 0.3s;
+}
+.why-card:hover { background: rgba(0,200,255,0.04); }
+.why-card.big { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.why-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5rem; letter-spacing: 4px;
+  color: var(--cyan); opacity: 0.15;
+  line-height: 1;
+}
+.why-card h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem; letter-spacing: 2px;
+  color: var(--white); margin-bottom: 12px;
+}
+.why-card p { font-size: 0.88rem; line-height: 1.8; color: var(--muted); }
+.why-visual {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8rem; opacity: 0.6;
+  filter: drop-shadow(0 0 30px rgba(0,200,255,0.3));
+}
+
+/* MATERIALS */
+.materials { background: var(--bg); }
+.mat-grid {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-top: 48px;
+}
+.mat-tag {
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 12px 24px; border-radius: 2px;
+  font-size: 0.82rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--muted);
+  transition: all 0.3s; cursor: default;
+}
+.mat-tag:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.mat-tag.highlight {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+/* DELIVERY */
+.delivery { background: var(--surface); }
+.delivery-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 60px;
+}
+.del-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 36px 32px; border-radius: 2px;
+  transition: all 0.3s; position: relative; overflow: hidden;
+}
+.del-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.del-card:hover { border-color: rgba(0,200,255,0.25); }
+.del-card:hover::before { opacity: 1; }
+.del-icon { font-size: 2.4rem; margin-bottom: 20px; display: block; }
+.del-card h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; letter-spacing: 2px; margin-bottom: 8px;
+}
+.del-card p { font-size: 0.83rem; line-height: 1.7; color: var(--muted); }
+.del-time {
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--cyan);
+}
+
+/* CTA */
+.cta-section {
+  background: var(--bg);
+  padding: 120px 60px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.cta-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(0,200,255,0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cta-section .s-title { font-size: clamp(3rem, 7vw, 6rem); margin-bottom: 24px; }
+.cta-section p {
+  font-size: 1rem; color: var(--muted); line-height: 1.8;
+  max-width: 500px; margin: 0 auto 48px;
+}
+
+/* CONTACT FORM */
+.form-wrap {
+  max-width: 600px; margin: 0 auto;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 48px;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: block; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--white); padding: 14px 18px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.9rem; outline: none;
+  transition: border-color 0.3s;
+  border-radius: 0;
+  appearance: none;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,200,255,0.08);
+}
+.form-group textarea { resize: vertical; min-height: 120px; }
+.form-group select option { background: var(--card); }
+.btn-submit {
+  width: 100%; background: var(--cyan); color: var(--bg);
+  border: none; padding: 18px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem; font-weight: 800;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.3s;
+  box-shadow: 0 0 40px rgba(0,200,255,0.2);
+}
+.btn-submit:hover { box-shadow: 0 0 60px rgba(0,200,255,0.4); }
+
+/* FOOTER */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 40px 60px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem; letter-spacing: 4px;
+  color: var(--white);
+}
+.footer-logo span { color: var(--cyan); }
+footer p { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+.footer-contacts { text-align: right; }
+.footer-contacts a {
+  display: block; font-size: 0.85rem; font-weight: 600;
+  color: var(--muted); text-decoration: none;
+  transition: color 0.2s; margin-bottom: 6px;
+}
+.footer-contacts a:hover { color: var(--cyan); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 30px; right: 30px;
+  background: var(--cyan); color: var(--bg);
+  padding: 16px 28px; border-radius: 2px;
+  font-size: 0.85rem; font-weight: 800;
+  letter-spacing: 1px;
+  transform: translateY(100px); opacity: 0;
+  transition: all 0.4s; z-index: 1000;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+@media (max-width: 900px) {
+  nav { padding: 16px 24px; }
+  .nav-links { display: none; }
+  section { padding: 70px 24px; }
+  .hero { padding: 120px 24px 60px; }
+  .hero-metrics { flex-direction: column; }
+  .metric { border-right: none; border-bottom: 1px solid var(--border); }
+  .services-intro { grid-template-columns: 1fr; }
+  .services-grid { grid-template-columns: 1fr 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .steps::before { display: none; }
+  .why-grid { grid-template-columns: 1fr; }
+  .why-card.big { grid-column: span 1; grid-template-columns: 1fr; }
+  .delivery-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  footer { flex-direction: column; align-items: flex-start; }
+  .footer-contacts { text-align: left; }
+  body { cursor: auto; }
+  .cursor, .cursor-ring { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="toast" id="toast">✓ Заявка отправлена — скоро свяжемся!</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">СЛО<span>Й 3D</span></div>
+  <ul class="nav-links">
+    <li><a href="#services">Что печатаем</a></li>
+    <li><a href="#how">Как работаем</a></li>
+    <li><a href="#delivery">Доставка</a></li>
+    <li><a href="#contact">Контакт</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta"><span>Заказать</span></a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-tag">3D Печать · Минск · Доставка по РБ</div>
+  <h1>
+    ЛЮБАЯ
+    <span class="line2">ФОРМА</span>
+    <span class="line3">ИЗ ПЛАСТИКА</span>
+  </h1>
+  <p class="hero-desc">
+    Печатаем детали, прототипы, запчасти и нестандартные изделия по вашим размерам.
+    Быстро, точно, с доставкой по всей Беларуси.
+  </p>
+  <div class="hero-actions">
+    <a href="#contact" class="btn-main">Оставить заявку</a>
+    <a href="#services" class="btn-ghost">Что мы делаем →</a>
+  </div>
+  <div class="hero-metrics">
+    <div class="metric">
+      <div class="metric-val">0.2мм</div>
+      <div class="metric-label">Точность слоя</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">1-3</div>
+      <div class="metric-label">Дня на заказ</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">РБ</div>
+      <div class="metric-label">Доставка везде</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">∞</div>
+      <div class="metric-label">Вариантов формы</div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span class="scroll-line"></span>
+    Прокрутите вниз
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="s-label">Направления</div>
+  <div class="services-intro">
+    <div>
+      <div class="s-title">ЧТО МЫ<br>ПЕЧАТАЕМ</div>
+    </div>
+    <p class="services-desc">
+      Если это существует в природе или в вашей голове — мы можем это напечатать.
+      Работаем с физическими лицами и бизнесом. Принимаем готовые файлы или
+      моделируем с нуля по фото и описанию.
+    </p>
+  </div>
+  <div class="services-grid">
+    <div class="srv-card">
+      <span class="srv-icon">🚗</span>
+      <h3>Автозапчасти</h3>
+      <p>Клипсы, кронштейны, заглушки, корпуса кнопок, держатели. Особенно актуально для китайских авто — детали которых нет в магазинах.</p>
+    </div>
+    <div class="srv-card">
+      <span class="srv-icon">🔧</span>
+      <h3>Промышленные детали</h3>
+      <p>Корпуса, втулки, шестерни, направляющие. Восстановление сломанных деталей по образцу — принесите, мы сделаем.</p>
+    </div>
+    <div class="srv-card">
+      <span class="srv-icon">🏠</span>
+      <h3>Для дома</h3>
+      <p>Органайзеры, держатели, крышки, ручки, вешалки, крепления. Любые нестандартные решения под ваш интерьер.</p>
+    </div>
+    <div class="srv-card">
+      <span class="srv-icon">💡</span>
+      <h3>Прототипы</h3>
+      <p>Быстрое создание прототипов для бизнеса и стартапов. Проверьте идею физически до запуска серийного производства.</p>
+    </div>
+    <div class="srv-card">
+      <span class="srv-icon">🎁</span>
+      <h3>Персональные заказы</h3>
+      <p>Именные таблички, необычные подставки, уникальные сувениры. Подарок который точно нигде не купишь.</p>
+    </div>
+    <div class="srv-card">
+      <span class="srv-icon">📐</span>
+      <h3>3D Моделирование</h3>
+      <p>Нет файла — не проблема. Пришлите фото, эскиз или просто опишите словами. Разработаем модель и напечатаем.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="s-label">Процесс</div>
+  <div class="s-title">КАК ЭТО<br>РАБОТАЕТ</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>Заявка</h3>
+      <p>Опишите задачу в форме ниже или напишите в мессенджер. Прикрепите фото или файл если есть.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>Согласование</h3>
+      <p>Обсудим материал, размеры и стоимость. Если нужно — подготовим или доработаем 3D модель.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>Печать</h3>
+      <p>Запускаем печать. Большинство заказов готовы за 1-3 дня в зависимости от сложности и объёма.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h3>Доставка</h3>
+      <p>Самовывоз в Минске или доставка по всей Беларуси. Упакуем надёжно — доедет в целости.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section class="why">
+  <div class="s-label">Преимущества</div>
+  <div class="s-title">ПОЧЕМУ<br>МЫ</div>
+  <div class="why-grid">
+    <div class="why-card big">
+      <div>
+        <div class="why-num">01</div>
+        <h3>Принесите сломанную деталь — уйдёте с новой</h3>
+        <p>Не нужно искать по магазинам и ждать посылку из Китая месяц. Приносите сломанную деталь — мы снимаем размеры прямо на месте и изготавливаем копию. Это работает с большинством пластиковых деталей любых механизмов.</p>
+      </div>
+      <div class="why-visual">🔩</div>
+    </div>
+    <div class="why-card">
+      <div class="why-num">02</div>
+      <h3>Индивидуальный подход</h3>
+      <p>Каждый заказ уникален. Нет стандартных решений — есть ваша задача и наш инструмент. Обсуждаем каждую деталь перед запуском.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-num">03</div>
+      <h3>Честные сроки</h3>
+      <p>Называем реальные сроки — не обещаем "завтра" если понимаем что не успеем. Уважаем ваше время.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-num">04</div>
+      <h3>Без посредников</h3>
+      <p>Работаете напрямую с мастером. Никаких менеджеров и колл-центров. Быстрая связь, прямые ответы.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-num">05</div>
+      <h3>Доставка по всей РБ</h3>
+      <p>Живёте не в Минске — не проблема. Отправим через DPD, Европочту или любую удобную службу.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MATERIALS -->
+<section class="materials">
+  <div class="s-label">Материалы</div>
+  <div class="s-title">ЧЕМ<br>ПЕЧАТАЕМ</div>
+  <p style="color:var(--muted); font-size:0.92rem; line-height:1.8; max-width:600px; margin:16px 0 0;">
+    Разные задачи требуют разных материалов. Подберём оптимальный вариант под вашу задачу — по прочности, гибкости, температуростойкости и внешнему виду.
+  </p>
+  <div class="mat-grid">
+    <span class="mat-tag highlight">PLA — Базовый</span>
+    <span class="mat-tag highlight">PETG — Прочный</span>
+    <span class="mat-tag highlight">ABS — Термостойкий</span>
+    <span class="mat-tag">TPU — Гибкий</span>
+    <span class="mat-tag">ASA — Для улицы</span>
+    <span class="mat-tag">PA — Нейлон</span>
+    <span class="mat-tag">Разные цвета</span>
+    <span class="mat-tag">Матовая/глянцевая поверхность</span>
+    <span class="mat-tag">По запросу</span>
+  </div>
+</section>
+
+<!-- DELIVERY -->
+<section class="delivery" id="delivery">
+  <div class="s-label">Логистика</div>
+  <div class="s-title">ДОСТАВКА<br>ПО БЕЛАРУСИ</div>
+  <div class="delivery-grid">
+    <div class="del-card">
+      <span class="del-icon">⚡</span>
+      <h3>Яндекс Доставка</h3>
+      <p>По Минску. Курьер привезёт прямо домой или в офис в удобное время. Быстро и удобно.</p>
+      <div class="del-time">В тот же или следующий день</div>
+    </div>
+    <div class="del-card">
+      <span class="del-icon">📦</span>
+      <h3>DPD / Европочта</h3>
+      <p>По всей Беларуси. Надёжная доставка в любой город и посёлок. Отслеживание по номеру.</p>
+      <div class="del-time">1-3 рабочих дня</div>
+    </div>
+    <div class="del-card">
+      <span class="del-icon">🤝</span>
+      <h3>Самовывоз</h3>
+      <p>Минск. Заберите готовый заказ лично — заодно обсудим следующий проект или покажем детали вживую перед оплатой.</p>
+      <div class="del-time">По договорённости</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA + FORM -->
+<section class="cta-section" id="contact">
+  <div class="cta-glow"></div>
+  <div class="s-label" style="justify-content:center">Контакт</div>
+  <div class="s-title">ОСТАВЬТЕ<br>ЗАЯВКУ</div>
+  <p>Опишите задачу — ответим в течение нескольких часов и рассчитаем стоимость.</p>
+
+  <div class="form-wrap">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Ваше имя</label>
+        <input type="text" placeholder="Иван" id="f-name">
+      </div>
+      <div class="form-group">
+        <label>Телефон / Telegram</label>
+        <input type="text" placeholder="+375 29 ..." id="f-phone">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Что нужно напечатать?</label>
+      <select id="f-type">
+        <option value="">— Выберите категорию —</option>
+        <option>Автозапчасть / деталь</option>
+        <option>Промышленная деталь</option>
+        <option>Для дома / интерьера</option>
+        <option>Прототип / разработка</option>
+        <option>Персональный заказ / подарок</option>
+        <option>Нужно 3D моделирование</option>
+        <option>Другое</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Опишите задачу</label>
+      <textarea placeholder="Расскажите подробнее: что нужно, размеры, материал, количество, есть ли файл или только фото..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Способ доставки</label>
+      <select id="f-delivery">
+        <option value="">— Выберите —</option>
+        <option>Самовывоз (Минск)</option>
+        <option>Яндекс Доставка (Минск)</option>
+        <option>DPD / Европочта (по РБ)</option>
+        <option>Обсудим позже</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="submitForm()">ОТПРАВИТЬ ЗАЯВКУ →</button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">СЛО<span>Й 3D</span></div>
+    <p>Слой 3D — 3D Печать в Минске · Доставка по всей Беларуси</p>
+    <p style="margin-top:4px; font-size:0.72rem;">© 2025 СЛОЙ 3D. Все права защищены.</p>
+  </div>
+  <div class="footer-contacts">
+    <a href="https://t.me/yourhandle" target="_blank">Telegram: @yourhandle</a>
+    <a href="tel:+375291234567">+375 (29) XXX-XX-XX</a>
+    <a href="mailto:info@sloy.by">info@sloy.by</a>
+  </div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+
+  function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  document.querySelectorAll('a, button, .srv-card, .step, .del-card').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width = '16px';
+      cursor.style.height = '16px';
+      ring.style.width = '52px';
+      ring.style.height = '52px';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width = '8px';
+      cursor.style.height = '8px';
+      ring.style.width = '32px';
+      ring.style.height = '32px';
+    });
+  });
+
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.srv-card, .step, .why-card, .del-card, .mat-tag').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s, background 0.3s, border-color 0.3s`;
+    observer.observe(el);
+  });
+
+  // Form submit — Telegram integration
+  async function submitForm() {
+    const name = document.getElementById('f-name').value.trim();
+    const phone = document.getElementById('f-phone').value.trim();
+    const type = document.getElementById('f-type').value;
+    const delivery = document.getElementById('f-delivery').value;
+    const desc = document.querySelector('textarea').value.trim();
+
+    if (!name || !phone) {
+      alert('Пожалуйста, укажите имя и контакт.');
+      return;
+    }
+
+    // ─── НАСТРОЙКИ ───────────────────────────────────────
+    const TOKEN   = '8783152859:AAFXoy3n0OAmiQtxwUQ690272o_ewsM-CsE';   // ← заменить
+    const CHAT_ID = '715100226';                   // ← твой chat_id (уже вписан)
+    // ─────────────────────────────────────────────────────
+
+    const text = [
+      '🆕 *Новая заявка — Слой 3D*',
+      '',
+      `👤 *Имя:* ${name}`,
+      `📞 *Контакт:* ${phone}`,
+      `📦 *Категория:* ${type || 'не указана'}`,
+      `🚚 *Доставка:* ${delivery || 'не указана'}`,
+      `📝 *Описание:* ${desc || 'не указано'}`,
+    ].join('\n');
+
+    const btn = document.querySelector('.btn-submit');
+    btn.textContent = 'ОТПРАВЛЯЕМ...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'Markdown' })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4000);
+        btn.textContent = '✓ ЗАЯВКА ОТПРАВЛЕНА';
+      } else {
+        alert('Ошибка отправки. Проверь токен бота.');
+        btn.textContent = 'ОТПРАВИТЬ ЗАЯВКУ →';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      alert('Ошибка сети. Попробуйте ещё раз.');
+      btn.textContent = 'ОТПРАВИТЬ ЗАЯВКУ →';
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
